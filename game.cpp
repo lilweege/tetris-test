@@ -6,7 +6,7 @@ private:
 		std::pair<int, int> squares[4];
 		int color;
 		
-		Tetromino(int type) {
+		void init(int type) {
 			x = 0, y = 0;
 			switch (type) {
 				case 0: // I
@@ -129,14 +129,16 @@ private:
 		scl, px;
 	
 public:
-	Tetromino theDawgs = Tetromino(0);
+	Tetromino currentPiece = Tetromino();
 	
 	int* pixels;
 	POINT mousePos;
 	// https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
 	BYTE keysPressed[256];
+	bool firstPress[256];
 	
 	Game(int w, int h) : width(w), height(h), px(w * h), scl(w * 2 >= h ? h / gridH : w / gridW) {
+		currentPiece.init(0);
 		pixels = (int*)malloc(px * sizeof(int));
 		for (int i = 0; i < px; ++i)
 			pixels[i] = 0x00FFFFFF;
@@ -152,30 +154,35 @@ public:
 				drawSquare(i, j, grid[j][i]);
 		// drawSquare(mousePos.x / scl, mousePos.y / scl, 0x00FFFFFF);
 		
-		theDawgs = Tetromino((tick / 1000) % 7);
-		theDawgs.x = mousePos.x / scl;
-		theDawgs.y = mousePos.y / scl;
-		drawTetromino(theDawgs);
-		if (keysPressed[1] >> 7)
-			placeTetromino(theDawgs);
-		// printf("%d\n", tick);
-		/*
-		if (mousePos.x >= 0 &&
-			mousePos.y >= 0 && 
-			mousePos.x < w && 
-			mousePos.y < h &&
-			keysPressed[1] >> 7) {
-			pixels[mousePos.y * w + mousePos.x] = 0;
-		}
-		*/
+		drawTetromino(currentPiece);
 		
-		// don't uncomment unless you want a seizure
-		/*
-		int r = (rand() % 255),
-			g = (rand() % 255),
-			b = (rand() % 255);
-		for (int i = 0; i < px; ++i)
-			pixels[i] = r << 16 | g << 8 | b;
-		*/
+		int isSpacePressed = keysPressed[VK_SPACE] >> 7,
+			isLeftPressed = keysPressed[VK_LEFT] >> 7,
+			isRightPressed = keysPressed[VK_RIGHT] >> 7,
+			isDownPressed = keysPressed[VK_DOWN] >> 7,
+			isUpPressed = keysPressed[VK_UP] >> 7;
+		
+		if (isSpacePressed && firstPress[VK_SPACE]) {
+			placeTetromino(currentPiece);
+			currentPiece.init(rand() % 7);
+		}
+		
+		// no arr yet
+		if (isLeftPressed && firstPress[VK_LEFT])
+			--currentPiece.x;
+		if (isRightPressed && firstPress[VK_RIGHT])
+			++currentPiece.x;
+		if (isDownPressed && firstPress[VK_DOWN])
+			++currentPiece.y;
+		if (isUpPressed && firstPress[VK_UP])
+			--currentPiece.y;
+		
+		firstPress[VK_SPACE] = !isSpacePressed;
+		firstPress[VK_LEFT] = !isLeftPressed;
+		firstPress[VK_RIGHT] = !isRightPressed;
+		firstPress[VK_DOWN] = !isDownPressed;
+		firstPress[VK_UP] = !isUpPressed;
+		
+		// printf("%d\n", tick);
 	}
 };

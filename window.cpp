@@ -1,7 +1,6 @@
 // https://docs.microsoft.com/en-us/windows/win32/apiindex/api-index-portal
 #include <windows.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <chrono>
 #include <thread>
 #include "game.cpp"
