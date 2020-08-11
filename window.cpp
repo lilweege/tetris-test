@@ -6,13 +6,13 @@
 #include <thread>
 #include "game.cpp"
 
-#define WIDTH 800
+#define WIDTH 300
 #define HEIGHT 600
 const char* windowName = "Window";
 
 HBITMAP hbm = NULL;
 
-int doGameLoop(HWND hwnd, const int FRAMERATE = 120, const int MAX_FRAMESKIP = 10) {
+int doGameLoop(HWND hwnd, const int FRAMERATE = 60, const int MAX_FRAMESKIP = 10) {
 	MSG msg;
 	const int TICK_SKIP = 1000 / FRAMERATE;
 	std::chrono::system_clock::time_point a = std::chrono::system_clock::now();
@@ -130,7 +130,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		windowName,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		WIDTH, HEIGHT,
+		WIDTH + 2 * GetSystemMetrics(SM_CXSIZEFRAME),
+		HEIGHT + 2 * GetSystemMetrics(SM_CYSIZEFRAME) + GetSystemMetrics(SM_CYCAPTION),
 		NULL, NULL, hInstance, NULL);
 	if (!hwnd)
 		return -1;
