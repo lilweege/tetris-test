@@ -209,7 +209,7 @@ private:
 		}
 	}
 	
-	void drawTetromino(Tetromino tetromino) {
+	void drawTetromino(const Tetromino& tetromino) {
 		for (int i = 0; i < 4; ++i)
 			drawSquare(
 				tetromino.x + tetromino.squares[tetromino.rotation * 4 + i].first,
@@ -217,14 +217,56 @@ private:
 				tetromino.color);
 	}
 
-	void placeTetromino(Tetromino tetromino) {
+	void placeTetromino(const Tetromino& tetromino) {
 		for (int i = 0; i < 4; ++i)
-			// this goes out of bounds
-			grid[tetromino.y + tetromino.squares[tetromino.rotation * 4 + i].second][tetromino.x + tetromino.squares[tetromino.rotation * 4 + i].first] = tetromino.color;
+			grid
+				[tetromino.y + tetromino.squares[tetromino.rotation * 4 + i].second]
+				[tetromino.x + tetromino.squares[tetromino.rotation * 4 + i].first]
+				= tetromino.color;
+	}
+	
+	bool moveTetromino(Tetromino& tetromino, int xOff, int yOff) {
+		bool valid = true;
+		for (int i = 0; i < 4; ++i) {
+			int x = xOff + tetromino.x + tetromino.squares[tetromino.rotation * 4 + i].first,
+				y = yOff + tetromino.y + tetromino.squares[tetromino.rotation * 4 + i].second;
+				
+			if (x < 0 || x >= gridW ||
+				y < 0 || y >= gridH ||
+				grid[y][x]) {
+				valid = false;
+				break;
+			}
+		}
+		if (valid) {
+			tetromino.x += xOff;
+			tetromino.y += yOff;
+		}
+		return valid;
+	}
+	
+	bool rotateTetromino(Tetromino& tetromino, int rOff) {
+		int r = ((tetromino.rotation + rOff) % 4 + 4) % 4;
+		bool valid = true;
+		for (int i = 0; i < 4; ++i) {
+			int x = tetromino.x + tetromino.squares[r * 4 + i].first,
+				y = tetromino.y + tetromino.squares[r * 4 + i].second;
+				
+			if (x < 0 || x >= gridW ||
+				y < 0 || y >= gridH ||
+				grid[y][x]) {
+				valid = false;
+				break;
+			}
+		}
+		if (valid)
+			tetromino.rotation = r;
+		return valid;
 	}
 	
 	int width, height,
 		scl, px;
+	
 public:
 	Tetromino currentPiece = Tetromino();
 	
@@ -236,60 +278,54 @@ public:
 	
 	Game(int w, int h) : width(w), height(h), px(w * h), scl(w * 2 >= h ? h / gridH : w / gridW) {
 		srand(time(NULL));
-		currentPiece.init(0, gridW / 2, 0);
+		currentPiece.init(0, gridW / 2, 1);
 		pixels = (int*)malloc(px * sizeof(int));
-		for (int i = 0; i < px; ++i)
-			pixels[i] = 0x00FFFFFF;
+		reset();
 	}
 	
 	~Game() {
 		free(pixels);
 	}
 	
+	void reset() {
+		for (int i = 0; i < gridW; ++i)
+			for (int j = 0; j < gridH; ++j)
+				grid[j][i] = 0;
+		currentPiece.init(rand() % 7, gridW / 2, 1);
+	}
+	
 	void update(int tick) {
+		// printf("%d\n", tick);
+		if (keysPressed['R'] >> 7 && firstPress['R'])
+			reset();
+		
+		if (keysPressed[VK_SPACE] >> 7 && firstPress[VK_SPACE]) {
+			while (moveTetromino(currentPiece, 0, 1));
+			placeTetromino(currentPiece);
+			currentPiece.init(rand() % 7, gridW / 2, 1);
+		}
+		// no arr yet
+		if (keysPressed[VK_LEFT] >> 7 && firstPress[VK_LEFT])
+			moveTetromino(currentPiece, -1, 0);
+		if (keysPressed[VK_RIGHT] >> 7 && firstPress[VK_RIGHT])
+			moveTetromino(currentPiece, 1, 0);
+		if (keysPressed[VK_DOWN] >> 7 && firstPress[VK_DOWN])
+			moveTetromino(currentPiece, 0, 1);
+		if (keysPressed[VK_UP] >> 7 && firstPress[VK_UP])
+			moveTetromino(currentPiece, 0, -1);
+		if (keysPressed['Z'] >> 7 && firstPress['Z'])
+			rotateTetromino(currentPiece, -1);
+		if (keysPressed['X'] >> 7 && firstPress['X'])
+			rotateTetromino(currentPiece, 1);
+		
+		
+		for (int i = 0; i < 256; ++i)
+			firstPress[i] = !(keysPressed[i] >> 7);
+		
 		for (int i = 0; i < gridW; ++i)
 			for (int j = 0; j < gridH; ++j)
 				drawSquare(i, j, grid[j][i]);
-		// drawSquare(mousePos.x / scl, mousePos.y / scl, 0x00FFFFFF);
 		
 		drawTetromino(currentPiece);
-		
-		int isSpacePressed = keysPressed[VK_SPACE] >> 7,
-			isLeftPressed = keysPressed[VK_LEFT] >> 7,
-			isRightPressed = keysPressed[VK_RIGHT] >> 7,
-			isDownPressed = keysPressed[VK_DOWN] >> 7,
-			isUpPressed = keysPressed[VK_UP] >> 7,
-			isZPressed = keysPressed['Z'] >> 7,
-			isXPressed = keysPressed['X'] >> 7;
-		
-		if (isSpacePressed && firstPress[VK_SPACE]) {
-			placeTetromino(currentPiece);
-			currentPiece.init(rand() % 7, gridW / 2, 0);
-		}
-		
-		// no arr yet
-		if (isLeftPressed && firstPress[VK_LEFT])
-			--currentPiece.x;
-		if (isRightPressed && firstPress[VK_RIGHT])
-			++currentPiece.x;
-		if (isDownPressed && firstPress[VK_DOWN])
-			++currentPiece.y;
-		if (isUpPressed && firstPress[VK_UP])
-			--currentPiece.y;
-		if (isZPressed && firstPress['Z'])
-			currentPiece.rotation = ((currentPiece.rotation - 1) % 4 + 4) % 4;
-		if (isXPressed && firstPress['X'])
-			currentPiece.rotation = ((currentPiece.rotation + 1) % 4 + 4) % 4;
-		
-		
-		firstPress[VK_SPACE] = !isSpacePressed;
-		firstPress[VK_LEFT] = !isLeftPressed;
-		firstPress[VK_RIGHT] = !isRightPressed;
-		firstPress[VK_DOWN] = !isDownPressed;
-		firstPress[VK_UP] = !isUpPressed;
-		firstPress['Z'] = !isZPressed;
-		firstPress['X'] = !isXPressed;
-		
-		// printf("%d\n", tick);
 	}
 };
