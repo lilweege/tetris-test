@@ -219,10 +219,30 @@ private:
 
 	void placeTetromino(const Tetromino& tetromino) {
 		for (int i = 0; i < 4; ++i)
-			grid
-				[tetromino.y + tetromino.squares[tetromino.rotation * 4 + i].second]
+			grid[tetromino.y + tetromino.squares[tetromino.rotation * 4 + i].second]
 				[tetromino.x + tetromino.squares[tetromino.rotation * 4 + i].first]
 				= tetromino.color;
+		
+		bool deleteRow;
+		for (int row = gridH - 1; row >= 0; --row) {
+			deleteRow = true;
+			for (int cell = 0; cell < gridW; ++cell) {
+				if (!grid[row][cell]) {
+					deleteRow = false;
+					break;
+				}
+			}
+			
+			if (deleteRow) {
+				for (int cell = 0; cell < gridW; ++cell)
+					grid[row][cell] = 0;
+				
+				for (int above = row; above > 0; --above)
+					for (int cell = 0; cell < gridW; ++cell)
+						grid[above][cell] = grid[above - 1][cell];
+				++row; // check new shifted row
+			}
+		}
 	}
 	
 	bool moveTetromino(Tetromino& tetromino, int xOff, int yOff) {
@@ -232,8 +252,7 @@ private:
 				y = yOff + tetromino.y + tetromino.squares[tetromino.rotation * 4 + i].second;
 				
 			if (x < 0 || x >= gridW ||
-				y < 0 || y >= gridH ||
-				grid[y][x]) {
+				y < 0 || grid[y][x]) {
 				valid = false;
 				break;
 			}
@@ -270,6 +289,7 @@ private:
 public:
 	Tetromino currentPiece = Tetromino();
 	
+	int last = 0;
 	int* pixels;
 	POINT mousePos;
 	// https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
@@ -278,7 +298,7 @@ public:
 	
 	Game(int w, int h) : width(w), height(h), px(w * h), scl(w * 2 >= h ? h / gridH : w / gridW) {
 		srand(time(NULL));
-		currentPiece.init(0, gridW / 2, 1);
+		currentPiece.init(0, gridW / 2, 0);
 		pixels = (int*)malloc(px * sizeof(int));
 		reset();
 	}
@@ -291,19 +311,28 @@ public:
 		for (int i = 0; i < gridW; ++i)
 			for (int j = 0; j < gridH; ++j)
 				grid[j][i] = 0;
-		currentPiece.init(rand() % 7, gridW / 2, 1);
+		currentPiece.init(rand() % 7, gridW / 2, 0);
 	}
 	
 	void update(int tick) {
-		// printf("%d\n", tick);
+		if (tick - last > 300/*arbitrary speed*/) {
+			last = tick;
+			if (!moveTetromino(currentPiece, 0, 1)) {
+				placeTetromino(currentPiece);
+				currentPiece.init(rand() % 7, gridW / 2, 1);
+			}
+		}
+		
 		if (keysPressed['R'] >> 7 && firstPress['R'])
 			reset();
 		
 		if (keysPressed[VK_SPACE] >> 7 && firstPress[VK_SPACE]) {
+			last = tick;
 			while (moveTetromino(currentPiece, 0, 1));
 			placeTetromino(currentPiece);
 			currentPiece.init(rand() % 7, gridW / 2, 1);
 		}
+		
 		// no arr yet
 		if (keysPressed[VK_LEFT] >> 7 && firstPress[VK_LEFT])
 			moveTetromino(currentPiece, -1, 0);
@@ -311,8 +340,6 @@ public:
 			moveTetromino(currentPiece, 1, 0);
 		if (keysPressed[VK_DOWN] >> 7 && firstPress[VK_DOWN])
 			moveTetromino(currentPiece, 0, 1);
-		if (keysPressed[VK_UP] >> 7 && firstPress[VK_UP])
-			moveTetromino(currentPiece, 0, -1);
 		if (keysPressed['Z'] >> 7 && firstPress['Z'])
 			rotateTetromino(currentPiece, -1);
 		if (keysPressed['X'] >> 7 && firstPress['X'])
