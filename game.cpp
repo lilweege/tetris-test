@@ -289,7 +289,16 @@ private:
 public:
 	Tetromino currentPiece = Tetromino();
 	
-	int last = 0;
+	
+	int arr = 50;
+	int das = 100;
+	int lastTick = 0;
+	int autofall = 300;
+	int lastDrop = 0;
+	int downfall = 50;
+	int lKeyTick = 0;
+	int rKeyTick = 0;
+	
 	int* pixels;
 	POINT mousePos;
 	// https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
@@ -315,11 +324,11 @@ public:
 	}
 	
 	void update(int tick) {
-		if (tick - last > 300/*arbitrary speed*/) {
-			last = tick;
+		if (tick - lastTick > autofall) {
+			lastTick = tick;
 			if (!moveTetromino(currentPiece, 0, 1)) {
 				placeTetromino(currentPiece);
-				currentPiece.init(rand() % 7, gridW / 2, 1);
+				currentPiece.init(rand() % 7, gridW / 2, 0);
 			}
 		}
 		
@@ -327,23 +336,46 @@ public:
 			reset();
 		
 		if (keysPressed[VK_SPACE] >> 7 && firstPress[VK_SPACE]) {
-			last = tick;
+			lastTick = tick;
 			while (moveTetromino(currentPiece, 0, 1));
 			placeTetromino(currentPiece);
-			currentPiece.init(rand() % 7, gridW / 2, 1);
+			currentPiece.init(rand() % 7, gridW / 2, 0);
 		}
 		
-		// no arr yet
-		if (keysPressed[VK_LEFT] >> 7 && firstPress[VK_LEFT])
-			moveTetromino(currentPiece, -1, 0);
-		if (keysPressed[VK_RIGHT] >> 7 && firstPress[VK_RIGHT])
-			moveTetromino(currentPiece, 1, 0);
-		if (keysPressed[VK_DOWN] >> 7 && firstPress[VK_DOWN])
+		if (keysPressed[VK_LEFT] >> 7) {
+			if (firstPress[VK_LEFT]) {
+				lKeyTick = tick + das;
+				moveTetromino(currentPiece, -1, 0);
+			}
+			else if (tick - lKeyTick > arr) {
+				lKeyTick = tick;
+				moveTetromino(currentPiece, -1, 0);
+			}
+		}
+		
+		if (keysPressed[VK_RIGHT] >> 7) {
+			if (firstPress[VK_RIGHT]) {
+				rKeyTick = tick + das;
+				moveTetromino(currentPiece, 1, 0);
+			}
+			else if (tick - rKeyTick > arr) {
+				rKeyTick = tick;
+				moveTetromino(currentPiece, 1, 0);
+			}
+		}
+
+		if (keysPressed[VK_DOWN] >> 7 && tick - lastDrop > downfall) {
+			lastDrop = tick;
 			moveTetromino(currentPiece, 0, 1);
+		}
+		
+		
 		if (keysPressed['Z'] >> 7 && firstPress['Z'])
 			rotateTetromino(currentPiece, -1);
 		if (keysPressed['X'] >> 7 && firstPress['X'])
 			rotateTetromino(currentPiece, 1);
+		
+		
 		
 		
 		for (int i = 0; i < 256; ++i)
