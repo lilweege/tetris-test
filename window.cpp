@@ -65,10 +65,12 @@ int doGameLoop(HWND hwnd, const int FRAMERATE = 60, const int MAX_FRAMESKIP = 10
 			if (hbm) {
 				HDC hdc = GetDC(hwnd);
 				HDC tmp = CreateCompatibleDC(hdc);
-				SelectObject(tmp, hbm);
+				HGDIOBJ obj = SelectObject(tmp, hbm);
 				BitBlt(hdc, 0, 0, WIDTH, HEIGHT, tmp, 0, 0, SRCCOPY);
 				DeleteDC(tmp);
 				ReleaseDC(hwnd, hdc);
+				DeleteObject(obj);
+				DeleteObject(hbm);
 			}
 			
 			// FPS

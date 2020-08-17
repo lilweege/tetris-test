@@ -251,8 +251,8 @@ private:
 			int x = xOff + tetromino.x + tetromino.squares[tetromino.rotation * 4 + i].first,
 				y = yOff + tetromino.y + tetromino.squares[tetromino.rotation * 4 + i].second;
 				
-			if (x < 0 || x >= gridW ||
-				y < 0 || grid[y][x]) {
+			if (x >= gridW || x < 0 ||
+				y >= gridH || grid[y][x]) {
 				valid = false;
 				break;
 			}
